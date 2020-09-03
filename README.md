@@ -1,5 +1,5 @@
 # TartanVO Challenge
-My solution for the [TartanVO VSLAM challenge Mono Track](https://www.aicrowd.com/challenges/tartanair-visual-slam-mono-track). Incorporates and end-to-end RCNN solution for position and pose estimation using a streaming-training paradigm in order to cope with the 3TB training set.
+My solution for the [TartanVO VSLAM challenge Mono Track](https://www.aicrowd.com/challenges/tartanair-visual-slam-mono-track). Incorporates an end-to-end RCNN solution for position and pose estimation using a streaming-training paradigm in order to cope with the 3TB training set.
 
 The work here is inspired by [this work](https://www.cs.ox.ac.uk/files/9026/DeepVO.pdf).
 
@@ -37,10 +37,11 @@ This solution is extremely sensitive to network failures and, as I soon learned,
 
 Enter `timeout-decorator`. This little package completed the functionality I was looking for as I could not set the timeout to something aggressive like 1 sec and at the first sight of trouble, retry any request. Training was smooth after this.
 
-##Improvements possible
+## Improvements possible
 
-My logging is quite lousy
-architecture definitely needs sprucing up
-parallel gpus or tpus
-training longer
-improved training regime
+- My logging is quite lousy
+- Architecture definitely needs sprucing up
+- Parallel gpus or tpus
+- Training longer
+- Improved training regime that chooses random starting frames trading away some memory efficiency for better training
+- Training for much longer than I'd care to pay for out of pocket
