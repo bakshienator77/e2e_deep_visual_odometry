@@ -580,8 +580,8 @@ class VisualOdometryDataLoader(torch.utils.data.Dataset):
 
         self.images=[[None for j in range(trajectory_length+1)] for i in range(self.batch_size)]
         self.how_far_have_we_gotten = [-1 for i in range(self.batch_size)]
-        self.individual_lengths = [len(datapath[i]) for i in range(self.batch_size)]
-
+        self.individual_lengths = [len(datapath[i]) for i in range(self.batch_size)] #used only when making inference at test time
+        
         if test:
             self.sequences = ['01']
         else:
@@ -610,11 +610,9 @@ class VisualOdometryDataLoader(torch.utils.data.Dataset):
             self.sizes.append(len(poses))
             return poses
         else:
-            for i, path in enumerate(self.base_path):
-#                 f = read_text_file("/".join(path[0].split("/")[:3]) + (lambda x: "/pose_left" if "left" in x else "/pose_right")(path[0]) + '.txt')
-#                 poses = np.array([[float(x) for x in line.split(" ")] for line in f.strip().split("\n")], dtype=np.float32)
-#                 print(len(self.images[i]))
-                poses = np.array([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] for line in range(self.individual_lengths[i])], dtype=np.float32)
+            for path in self.base_path:
+                f = read_text_file("/".join(path[0].split("/")[:3]) + (lambda x: "/pose_left" if "left" in x else "/pose_right")(path[0]) + '.txt')
+                poses = np.array([[float(x) for x in line.split(" ")] for line in f.strip().split("\n")], dtype=np.float32)
                 all_poses.append(poses)
 
                 self.size = self.size + len(poses)
@@ -698,8 +696,8 @@ class VisualOdometryDataLoader(torch.utils.data.Dataset):
                     img1 = self.transform(img1)
                 self.images[traj_num][(i + 1) % (self.trajectory_length + 1)] = img1
                 # del img1
-            pose1 = self.get6DoFPose(self.poses[traj_num][i])
-            pose2 = self.get6DoFPose(self.poses[traj_num][i+1])
+            pose1 = self.getPose(self.poses[traj_num][i])
+            pose2 = self.getPose(self.poses[traj_num][i+1])
             odom = pose2 - pose1
             images_stacked.append(np.concatenate([self.images[traj_num][i % (self.trajectory_length + 1)], self.images[traj_num][(i+1) % (self.trajectory_length + 1)]], axis=0))
             odometries.append(odom)
@@ -709,49 +707,37 @@ class VisualOdometryDataLoader(torch.utils.data.Dataset):
     def __len__(self):
 #         return self.size - (self.trajectory_length * len(self.sequences))
         return (min(self.sizes) - self.trajectory_length)*self.batch_size 
-    def isRotationMatrix(self, R):
-        Rt = np.transpose(R)
-        shouldBeIdentity = np.dot(Rt, R)
-        I = np.identity(3, dtype = R.dtype)
-        n = np.linalg.norm(I - shouldBeIdentity)
-        return n < 1e-6
 
-    def rotationMatrixToEulerAngles(self, R):
-        assert(self.isRotationMatrix(R))
-        sy = math.sqrt(R[0,0] * R[0,0] +  R[1,0] * R[1,0])
-        singular = sy < 1e-6
 
-        if  not singular:
-            x = math.atan2(R[2,1] , R[2,2])
-            y = math.atan2(-R[2,0], sy)
-            z = math.atan2(R[1,0], R[0,0])
-        else:
-            x = math.atan2(-R[1,2], R[1,1])
-            y = math.atan2(-R[2,0], sy)
-            z = 0
-
-        return np.array([x, y, z], dtype=np.float32)
-
-    def get6DoFPose(self, p):
-        # pos = np.array([p[3], p[7], p[11]])
-        # R = np.array([[p[0], p[1], p[2]], [p[4], p[5], p[6]], [p[8], p[9], p[10]]])
-        # angles = self.rotationMatrixToEulerAngles(R)
+    def getPose(self, p):
         pos = np.array([p[0], p[1], p[2]]) #Cartesian coordinates
         angles = np.array([p[3], p[4], p[5], p[6]]) #Quaternions
         return np.concatenate((pos, angles))
 
-# if __name__ == "__main__":
-#     db = VisualOdometryDataLoader("/data/KITTI/dataset/")
-#     img1, img2, odom = db[1]
-#     print (odom)
 
-#     import matplotlib.pyplot as plt
+class VisualOdometryDataLoaderTest(VisualOdometryDataLoader):
+    #overloading this function as no pose file exists at inference time
+    def load_poses(self):
+        all_poses = []
+        if not self.mixed_batch:
+            # for sequence in self.sequences:
+            f = read_text_file("/".join(self.base_path[0].split("/")[:3]) + (lambda x: "/pose_left" if "left" in x else "/pose_right")(self.base_path[0]) + '.txt')
+            poses = np.array([[float(x) for x in line.split(" ")] for line in f.strip().split("\n")], dtype=np.float32)
+      #         all_poses.append(poses)
+            self.size = self.size + len(poses)
+            self.sizes.append(len(poses))
+            return poses
+        else:
+            for i, path in enumerate(self.base_path):
+#                 f = read_text_file("/".join(path[0].split("/")[:3]) + (lambda x: "/pose_left" if "left" in x else "/pose_right")(path[0]) + '.txt')
+#                 poses = np.array([[float(x) for x in line.split(" ")] for line in f.strip().split("\n")], dtype=np.float32)
+#                 print(len(self.images[i]))
+                poses = np.array([[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] for line in range(self.individual_lengths[i])], dtype=np.float32)
+                all_poses.append(poses)
 
-#     f, axarr = plt.subplots(2,2)
-#     axarr[0,0].imshow(img1)
-#     axarr[0,1].imshow(img2)
-#     plt.show()
-
+                self.size = self.size + len(poses)
+                self.sizes.append(len(poses))
+            return all_poses
     
 USE_CUDA = torch.cuda.is_available()
 FLOAT = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
