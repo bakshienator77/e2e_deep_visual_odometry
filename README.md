@@ -28,7 +28,7 @@ The dataloader is implemented in the `deepvo.py` file and is called [VisualOdome
 
 In order to make training memory efficient and because we a using a sequence model in our architecture (cannot backpropagate infitely back in time) we set a hyperparameter known as `trajectory_length` which defines how far back we back propagate.
 
-At any given time we keep ```batch_size * (trajectory_length + 1)``` images in memory. We download images sequentially such that, barring the first step of training, only `batch_size` number of images are downloaded in each subsequent step and each downloaded image is *used* approximately `trajectory_length` number of times.
+At any given time we keep ```batch_size * (trajectory_length + 1)``` images in memory. We download images sequentially such that, barring the first step of training, only `batch_size` number of images are downloaded in each subsequent step and each downloaded image is *used* approximately `trajectory_length` number of times before being discarded.
 
 Concretely, if we have a `batch_size` of 8, each trajectory in the batch is 100 frames long and our `trajectory_length` is set to 10. This batch will further be divided into ```#frames - trajectory_length = 90``` mini-batches, in each mini-batch the the frames are fed in pair-wise sequentially starting from the 0th and upto the 10th frame followed by an optimizer step.
 
