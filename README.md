@@ -45,3 +45,7 @@ Enter `timeout-decorator`. This little package completed the functionality I was
 - Training longer
 - Improved training regime that chooses random starting frames trading away some memory efficiency for better training
 - Training for much longer than I'd care to pay for out of pocket
+
+### Me explaning my approach at the CVPR Award Ceremony
+
+[Youtube link](https://youtu.be/jNhPD4oO6xA?t=4354)
